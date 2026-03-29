@@ -29,7 +29,7 @@ local function equipTool()
 	if not backpack then return end
 
 	local currentTool = character:FindFirstChildOfClass("Tool")
-	if currentTool and (currentTool.Name == "Old Axe" or currentTool.Name == "Good Axe") then
+	if currentTool and (currentTool.Name == "Old Axe" or currentTool.Name == "Good Axe" or currentTool.Name == "Tactical Axe") then
 		return
 	end
 
@@ -77,7 +77,7 @@ local function teleportToSpawn()
 	local root = character:FindFirstChild("HumanoidRootPart")
 	
 	if root then
-		root.CFrame = randomPart.CFrame + Vector3.new(0,5,0)
+		root.CFrame = randomPart.CFrame + Vector3.new(0,3,0)
 	end
 end
 
@@ -97,7 +97,7 @@ local function getAllTrees()
 			if treesFolder then
 				for _, model in pairs(treesFolder:GetChildren()) do
 					if model:IsA("Model") then
-						if model.Name == "Tree1" or model.Name == "Tree1-alien" then
+						if model.Name == "Tree1-alien" or model.Name == "Tree1" or model.Name == "CoconutTree" then
 							table.insert(trees, model)
 						end
 					end
@@ -107,6 +107,32 @@ local function getAllTrees()
 	end
 	
 	return trees
+end
+
+local function getAllAlienCubes()
+	local cubes = {}
+	
+	local debris = workspace:FindFirstChild("_Debris")
+	if not debris then return cubes end
+	
+	local islands = debris:FindFirstChild("Islands")
+	if not islands then return cubes end
+	
+	for _, island in pairs(islands:GetChildren()) do
+		local objects = island:FindFirstChild("Objects")
+		if objects then
+			local misc = objects:FindFirstChild("Misc")
+			if misc then
+				for _, model in pairs(misc:GetChildren()) do
+					if model:IsA("Model") and model.Name == "Alien Cube" then
+						table.insert(cubes, model)
+					end
+				end
+			end
+		end
+	end
+	
+	return cubes
 end
 
 local function teleportToTree(tree)
@@ -123,7 +149,13 @@ local function teleportToTree(tree)
 			end
 			
 			if tree.PrimaryPart then
-				root.CFrame = tree.PrimaryPart.CFrame + Vector3.new(0,3,0)
+				_G.AllowTeleport = true
+
+                root.CFrame = tree.PrimaryPart.CFrame + Vector3.new(0,3,0)
+
+                task.wait() 
+
+                _G.AllowTeleport = false
 			end
 			
 			task.wait(0.15)
@@ -153,18 +185,56 @@ local function startFarm()
 	
 	while farming do
 		local trees = getAllTrees()
+		local cubes = getAllAlienCubes()
 		
-		if #trees == 0 then
-			button.Text = "Hết cây!"
+		-- 🔥 Gộp lại
+		local targets = {}
+		
+		for _, v in pairs(trees) do
+			table.insert(targets, v)
+		end
+		
+		for _, v in pairs(cubes) do
+			table.insert(targets, v)
+		end
+		
+		if #targets == 0 then
+			button.Text = "Hết mục tiêu!"
 			break
 		end
 		
-		for _, tree in pairs(trees) do
+		for _, obj in pairs(targets) do
 			if not farming then break end
 			
-			if tree and tree.Parent then
-				teleportToTree(tree)
-				fastClickLoop(tree)
+			if obj and obj.Parent then
+				
+				task.spawn(function()
+					while farming and obj and obj.Parent do
+						local character = player.Character
+						if not character then break end
+						
+						local root = character:FindFirstChild("HumanoidRootPart")
+						if not root then break end
+						
+						if not obj.PrimaryPart then
+							obj.PrimaryPart = obj:FindFirstChildWhichIsA("BasePart")
+						end
+						
+						if obj.PrimaryPart then
+							_G.AllowTeleport = true
+							
+							root.CFrame = obj.PrimaryPart.CFrame + Vector3.new(0,6,0)
+							
+							task.wait()
+							
+							_G.AllowTeleport = false
+						end
+						
+						task.wait(0.15)
+					end
+				end)
+				
+				fastClickLoop(obj)
 			end
 		end
 		
