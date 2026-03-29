@@ -1,0 +1,208 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+if player.PlayerGui:FindFirstChild("TreeFarmGui") then
+	player.PlayerGui.TreeFarmGui:Destroy()
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "TreeFarmGui"
+gui.Parent = player:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 140, 0, 45)
+button.Position = UDim2.new(0, 20, 0, 100)
+button.Text = "Farm: OFF"
+button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+button.TextColor3 = Color3.fromRGB(255,255,255)
+button.Parent = gui
+
+local farming = false
+local running = false
+
+local function equipTool()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local backpack = player:FindFirstChild("Backpack")
+	if not backpack then return end
+
+	local currentTool = character:FindFirstChildOfClass("Tool")
+	if currentTool and (currentTool.Name == "Old Axe" or currentTool.Name == "Good Axe") then
+		return
+	end
+
+	local tool = backpack:FindFirstChild("Good Axe") or backpack:FindFirstChild("Old Axe")
+	if tool then
+		tool.Parent = character
+	end
+end
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.5)
+	if farming then
+		equipTool()
+	end
+end)
+
+task.spawn(function()
+	while true do
+		if farming then
+			equipTool()
+		end
+		task.wait(1)
+	end
+end)
+
+local function teleportToSpawn()
+	local raft = workspace:FindFirstChild("_Raft")
+	if not raft then return end
+	
+	local spawns = raft:FindFirstChild("Spawns")
+	if not spawns then return end
+	
+	local parts = {}
+	for _, v in pairs(spawns:GetChildren()) do
+		if v:IsA("BasePart") then
+			table.insert(parts, v)
+		end
+	end
+	
+	if #parts == 0 then return end
+	
+	local randomPart = parts[math.random(1, #parts)]
+	
+	local character = player.Character or player.CharacterAdded:Wait()
+	local root = character:FindFirstChild("HumanoidRootPart")
+	
+	if root then
+		root.CFrame = randomPart.CFrame + Vector3.new(0,5,0)
+	end
+end
+
+local function getAllTrees()
+	local trees = {}
+	
+	local debris = workspace:FindFirstChild("Debris")
+	if not debris then return trees end
+	
+	local islands = debris:FindFirstChild("Islands")
+	if not islands then return trees end
+	
+	for _, island in pairs(islands:GetChildren()) do
+		local objects = island:FindFirstChild("Objects")
+		if objects then
+			local treesFolder = objects:FindFirstChild("Trees")
+			if treesFolder then
+				for _, model in pairs(treesFolder:GetChildren()) do
+					if model:IsA("Model") then
+						if model.Name == "Tree1" or model.Name == "tree1-alien" then
+							table.insert(trees, model)
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	return trees
+end
+
+local function teleportToTree(tree)
+	task.spawn(function()
+		while farming and tree and tree.Parent do
+			local character = player.Character
+			if not character then break end
+			
+			local root = character:FindFirstChild("HumanoidRootPart")
+			if not root then break end
+			
+			if not tree.PrimaryPart then
+				tree.PrimaryPart = tree:FindFirstChildWhichIsA("BasePart")
+			end
+			
+			if tree.PrimaryPart then
+				root.CFrame = tree.PrimaryPart.CFrame + Vector3.new(0,3,0)
+			end
+			
+			task.wait(0.15)
+		end
+	end)
+end
+
+local function fastClickLoop(tree)
+	while tree and tree.Parent and farming do
+		local character = player.Character
+		if character then
+			local tool = character:FindFirstChildOfClass("Tool")
+			if tool then
+				for i = 1, 5 do
+					tool:Activate()
+				end
+			end
+		end
+		task.wait()
+	end
+end
+
+local function startFarm()
+	if running then return end
+	running = true
+	farming = true
+	
+	while farming do
+		local trees = getAllTrees()
+		
+		if #trees == 0 then
+			button.Text = "Hết cây!"
+			break
+		end
+		
+		for _, tree in pairs(trees) do
+			if not farming then break end
+			
+			if tree and tree.Parent then
+				teleportToTree(tree)
+				fastClickLoop(tree)
+			end
+		end
+		
+		task.wait(0.5)
+	end
+	
+	farming = false
+	running = false
+	button.Text = "Farm: OFF"
+	teleportToSpawn()
+end
+
+button.MouseButton1Click:Connect(function()
+	farming = not farming
+	
+	if farming then
+		button.Text = "Farm: ON"
+		equipTool()
+		startFarm()
+	else
+		button.Text = "Farm: OFF"
+		teleportToSpawn()
+	end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	
+	if input.KeyCode == Enum.KeyCode.LeftAlt then
+		farming = not farming
+		
+		if farming then
+			button.Text = "Farm: ON"
+			equipTool()
+			startFarm()
+		else
+			button.Text = "Farm: OFF"
+			teleportToSpawn()
+		end
+	end
+end)
