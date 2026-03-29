@@ -97,7 +97,7 @@ local function getAllTrees()
 			if treesFolder then
 				for _, model in pairs(treesFolder:GetChildren()) do
 					if model:IsA("Model") then
-						if model.Name == "Tree1" or model.Name == "tree1-alien" then
+						if model.Name == "Tree1" or model.Name == "Tree1-alien" then
 							table.insert(trees, model)
 						end
 					end
