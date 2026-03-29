@@ -84,7 +84,7 @@ end
 local function getAllTrees()
 	local trees = {}
 	
-	local debris = workspace:FindFirstChild("Debris")
+	local debris = workspace:FindFirstChild("_Debris")
 	if not debris then return trees end
 	
 	local islands = debris:FindFirstChild("Islands")
